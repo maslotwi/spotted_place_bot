@@ -22,8 +22,8 @@ def draw_pixel(x: int, y: int, color: str):
     time.sleep(5)
 
 
-def draw_amogus(cords: Tuple[int, int], color: str):
-    x,y=cords
+def draw_amogus(coords: Tuple[int, int], color: str):
+    x,y=coords
     for offx, offy in amogus:
         draw_pixel(x+offx,y+offy,color)
     draw_pixel(x + 2,y + 1,"4285f4")
@@ -49,8 +49,8 @@ def img2pixels(filename: str):
             yield x,y,hex(r)[2:]+hex(g)[2:]+hex(b)[2:]
 
 
-def draw_image(filename: str, cords: Tuple[int, int]):
-    x,y = cords
+def draw_image(filename: str, coords: Tuple[int, int]):
+    x,y = coords
     for offx,offy,color in img2pixels(filename):
         draw_pixel(x+offx,y+offy,color)
 
