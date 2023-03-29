@@ -1,6 +1,6 @@
 import requests, time, sys
 from PIL import Image
-from typing import Tuple
+from typing import Tuple, List
 from rich.progress import Progress
 
 amogus = [
@@ -21,6 +21,7 @@ def usage():
         """Usage: placebot [OPTIONS] [COORDINATES]
     -i <FILE>       place image from file
     -a <END X>      place amogus line
+    -v              place vertically 
     -h --help       display this help and exit
 """)
 
@@ -50,15 +51,26 @@ def draw_amogus(coords: Tuple[int, int], color: str, progress, task):
     progress.remove_task(task_amogus)
 
 
-def amogus_line(x: int, y: int, end: int):
-    colt = ["2dd354", "fcd015", "f7931e", "ef4037", "b442cc", "1a1a1a"]
+def read_colors():
+    with open('colors.txt','r') as f:
+        return [i.strip().strip('#\'",.') for i in f.readlines()]
+
+
+def amogus_line(x: int, y: int, end: int, colt: List[str], vertical: bool = False):
     col = 0
     with Progress() as progress:
-        main_task = progress.add_task("Progress...", total=(end-x)//4*(len(amogus)+2))
-        while x + 3 < end:
+        if vertical:
+            total = (end-y)//5*(len(amogus)+2)
+        else:
+            total = (end-x)//4*(len(amogus)+2)
+        main_task = progress.add_task("Progress...", total=total)
+        while (x + 3 < end and not vertical) or (y+4 <= end and vertical):
             draw_amogus((x, y), colt[col % len(colt)], progress, main_task)
             col += 1
-            x += 4
+            if vertical:
+                y += 5
+            else:
+                x += 4
 
 
 def img2pixels(filename: str):
@@ -86,6 +98,11 @@ def draw_image(filename: str, coords: Tuple[int, int]):
 
 
 if __name__ == '__main__':
+    vert = False
+    coords = ()
+    arg = None
+    await_arg = False
+    action = None
     if len(sys.argv) == 1:
         eprint("Too few arguments")
         usage()
@@ -93,16 +110,43 @@ if __name__ == '__main__':
     if sys.argv[1] in ("-h", "--help"):
         usage()
         exit()
-    if len(sys.argv) < 5:
-        eprint("Too few arguments")
+    for i in sys.argv[1:]:
+        if await_arg:
+            if action == 'a':
+                arg = int(i)
+            else:
+                arg = i
+            await_arg = False
+        else:
+            if i.startswith('-'):
+                for j in i:
+                    match j:
+                        case "v":
+                            vert = True
+                        case "a":
+                            await_arg = True
+                            action = "a"
+                        case "i":
+                            await_arg = True
+                            action = "i"
+            else:
+                if len(coords) < 2:
+                    coords += (int(i),)
+                else:
+                    eprint("Coordinates should be an X Y pair")
+                    usage()
+                    exit(1)
+    if len(coords) < 2:
+        eprint("Coordinates should be an X Y pair")
         usage()
         exit(1)
-    if len(sys.argv) > 5:
-        eprint("Too many arguments")
-        usage()
-        exit(1)
-    if sys.argv[1] == "-a":
-        amogus_line(int(sys.argv[3]),int(sys.argv[4]),int(sys.argv[2]))
-    if sys.argv[1] == "-i":
-        draw_image(sys.argv[2], (int(sys.argv[3]), int(sys.argv[4])))
-    #draw_image('boty.png', (0, 150))
+    match action:
+        case "a":
+            amogus_line(*coords, arg, read_colors(), vert)
+        case "i":
+            draw_image(arg, coords)
+        case None:
+            eprint("Invalid action")
+            usage()
+            exit(1)
+
