@@ -107,7 +107,7 @@ def img2pixels(filename: str):
     for y in range(h):
         for x in range(w):
             r, g, b = next(i)[:3]
-            yield x, y, hex(r)[2:] + hex(g)[2:] + hex(b)[2:]
+            yield x, y, hex(r)[2:].rjust(2,"0") + hex(g)[2:].rjust(2,"0") + hex(b)[2:].rjust(2,"0")
 
 
 def img_size(filename: str):
@@ -216,7 +216,11 @@ if __name__ == '__main__':
                 px = 0
                 t1 = progress.add_task("You contributed 0 pixels, total progress:", total=1)
                 while True:
-                    data = requests.get(path.join(arg, "task")).json()
+                    try:
+                        data = requests.get(path.join(arg, "task")).json()
+                    except Exception:
+                        time.sleep(10)
+                        continue
                     if data['status'] == "drawing":
                         progress.update(t1,
                                         completed=data['progress'],
@@ -254,6 +258,11 @@ if __name__ == '__main__':
                 global refill
                 vert = False
                 global Loop
+                if "stop" in request.form:
+                    global Task_queue
+                    Task_queue = Queue()
+                    refill = lambda: Task_queue.put({"status":"idle"})
+                    return redirect("/static/index.html")
                 if "loop" in request.form:
                     Loop = True
                 else:
